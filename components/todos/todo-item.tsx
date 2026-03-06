@@ -4,15 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 
-
 interface TodoItemProps {
   todo: Todo;
-  disabled?: boolean;
+  toggleDisabled?: boolean;
+  deleteDisabled?: boolean;
   onToggle: (todo: Todo) => void;
   onDelete: (id: number) => void;
 }
 
-export function TodoItem({ todo, disabled = false, onToggle, onDelete }: TodoItemProps) {
+export function TodoItem({
+  todo,
+  toggleDisabled = false,
+  deleteDisabled = false,
+  onToggle,
+  onDelete,
+}: TodoItemProps) {
   return (
     <li>
       <Card
@@ -23,7 +29,7 @@ export function TodoItem({ todo, disabled = false, onToggle, onDelete }: TodoIte
           <label className="flex min-w-0 flex-1 items-center gap-3">
             <Checkbox
               checked={todo.completed}
-              disabled={disabled}
+              disabled={toggleDisabled}
               onCheckedChange={() => onToggle(todo)}
               className="size-4 accent-blue-400"
             />
@@ -49,7 +55,7 @@ export function TodoItem({ todo, disabled = false, onToggle, onDelete }: TodoIte
               type="button"
               size="sm"
               variant="ghost"
-              disabled={disabled}
+              disabled={deleteDisabled}
               onClick={() => onDelete(todo.id)}
               className="text-red-300 hover:bg-red-500/10 hover:text-red-200 cursor-pointer"
             >
