@@ -22,6 +22,8 @@ interface TodosState {
   mutationError: string | null;
   fetchPage: (page: number) => Promise<void>;
   setPage: (page: number) => Promise<void>;
+  goToPreviousPage: () => Promise<void>;
+  goToNextPage: () => Promise<void>;
   setFilter: (filter: TodoFilter) => void;
   retryCurrentPage: () => Promise<void>;
   addTodo: (text: string) => Promise<boolean>;
@@ -74,6 +76,18 @@ export const useTodosStore = create<TodosState>((set, get) => ({
 
   setPage: async (page: number) => {
     await get().fetchPage(page);
+  },
+
+  goToPreviousPage: async () => {
+    const previousPage = Math.max(1, get().currentPage - 1);
+    await get().fetchPage(previousPage);
+  },
+
+  goToNextPage: async () => {
+    const { currentPage, total, limit } = get();
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const nextPage = Math.min(totalPages, currentPage + 1);
+    await get().fetchPage(nextPage);
   },
 
   setFilter: (filter: TodoFilter) => {
