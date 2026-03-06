@@ -10,8 +10,10 @@ const DEFAULT_USER_ID = 1;
 interface TodosState {
   todosByPage: Record<number, Todo[]>;
   createdTodos: Todo[];
+  localCreatedTodoIds: number[];
   updatedTodos: Record<number, Todo>;
   deletedTodoIds: number[];
+  pendingToggleIds: number[];
   currentPage: number;
   total: number;
   limit: number;
@@ -39,8 +41,10 @@ function uniqueLocalTodoId(currentTodos: Todo[]): number {
 export const useTodosStore = create<TodosState>((set, get) => ({
   todosByPage: {},
   createdTodos: [],
+  localCreatedTodoIds: [],
   updatedTodos: {},
   deletedTodoIds: [],
+  pendingToggleIds: [],
   currentPage: 1,
   total: 0,
   limit: TODOS_PER_PAGE,
@@ -120,6 +124,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
 
         return {
           createdTodos: [safeCreatedTodo, ...state.createdTodos],
+          localCreatedTodoIds: [safeCreatedTodo.id, ...state.localCreatedTodoIds],
           isMutating: false,
         };
       });
@@ -135,7 +140,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
   },
 
   toggleTodo: async (todo: Todo) => {
-    if (todo.id <= 0) {
+    if (get().localCreatedTodoIds.includes(todo.id)) {
       set((state) => ({
         createdTodos: state.createdTodos.map((item) =>
           item.id === todo.id ? { ...item, completed: !item.completed } : item
@@ -144,39 +149,65 @@ export const useTodosStore = create<TodosState>((set, get) => ({
       return true;
     }
 
-    set({ isMutating: true, mutationError: null });
+    if (get().pendingToggleIds.includes(todo.id)) {
+      return false;
+    }
+
+    const optimisticCompleted = !todo.completed;
+    set((state) => ({
+      mutationError: null,
+      pendingToggleIds: [...state.pendingToggleIds, todo.id],
+      updatedTodos: {
+        ...state.updatedTodos,
+        [todo.id]: {
+          ...(state.updatedTodos[todo.id] ?? todo),
+          completed: optimisticCompleted,
+        },
+      },
+      createdTodos: state.createdTodos.map((item) =>
+        item.id === todo.id ? { ...item, completed: optimisticCompleted } : item
+      ),
+    }));
 
     try {
-      const updated = await updateTodo(todo.id, { completed: !todo.completed });
+      const updated = await updateTodo(todo.id, { completed: optimisticCompleted });
 
       set((state) => ({
+        pendingToggleIds: state.pendingToggleIds.filter((id) => id !== todo.id),
         updatedTodos: {
           ...state.updatedTodos,
           [todo.id]: {
-            ...todo,
+            ...(state.updatedTodos[todo.id] ?? todo),
             ...updated,
           },
         },
-        createdTodos: state.createdTodos.map((item) =>
-          item.id === todo.id ? { ...item, completed: !item.completed } : item
-        ),
-        isMutating: false,
       }));
 
       return true;
     } catch {
-      set({
-        isMutating: false,
+      set((state) => ({
+        pendingToggleIds: state.pendingToggleIds.filter((id) => id !== todo.id),
+        updatedTodos: {
+          ...state.updatedTodos,
+          [todo.id]: {
+            ...(state.updatedTodos[todo.id] ?? todo),
+            completed: todo.completed,
+          },
+        },
+        createdTodos: state.createdTodos.map((item) =>
+          item.id === todo.id ? { ...item, completed: todo.completed } : item
+        ),
         mutationError: "No fue posible actualizar el estado de la tarea.",
-      });
+      }));
       return false;
     }
   },
 
   removeTodo: async (id: number) => {
-    if (id <= 0) {
+    if (get().localCreatedTodoIds.includes(id)) {
       set((state) => ({
         createdTodos: state.createdTodos.filter((todo) => todo.id !== id),
+        localCreatedTodoIds: state.localCreatedTodoIds.filter((todoId) => todoId !== id),
       }));
       return true;
     }
@@ -191,6 +222,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
           ? state.deletedTodoIds
           : [...state.deletedTodoIds, id],
         createdTodos: state.createdTodos.filter((todo) => todo.id !== id),
+        localCreatedTodoIds: state.localCreatedTodoIds.filter((todoId) => todoId !== id),
         isMutating: false,
       }));
 
