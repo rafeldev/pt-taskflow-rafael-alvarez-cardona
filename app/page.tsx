@@ -1,9 +1,30 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { AlertCircleIcon, CheckCircle2Icon, Trash2Icon } from "lucide-react";
 import { EmptyState } from "@/components/todos/empty-state";
 import { LoadingState } from "@/components/todos/loading-state";
 import { TodoItem } from "@/components/todos/todo-item";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTodos } from "@/hooks/use-todos";
 import { TodoFilter } from "@/lib/types/todo";
 
@@ -16,6 +37,7 @@ const FILTER_OPTIONS: Array<{ label: string; value: TodoFilter }> = [
 export default function Home() {
   const [newTodo, setNewTodo] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [todoToDelete, setTodoToDelete] = useState<number | null>(null);
 
   const {
     todos,
@@ -26,7 +48,8 @@ export default function Home() {
     isMutating,
     error,
     mutationError,
-    setPage,
+    goToPreviousPage,
+    goToNextPage,
     setFilter,
     retryCurrentPage,
     addTodo,
@@ -46,123 +69,179 @@ export default function Home() {
   }
 
   async function handleDeleteTodo(id: number) {
-    const confirmed = window.confirm("¿Seguro que deseas eliminar esta tarea?");
-    if (!confirmed) return;
-
     const wasDeleted = await removeTodo(id);
     if (wasDeleted) {
       setFeedback("Tarea eliminada correctamente.");
+      setTodoToDelete(null);
     }
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 bg-slate-50 px-4 py-8">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">TaskFlow</h1>
-        <p className="text-sm text-slate-600">
-          Gestión de tareas con Next.js, TypeScript y Zustand.
-        </p>
-      </header>
+    <>
+      <main className="relative min-h-screen overflow-hidden px-4 py-10">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.16),transparent_45%)]" />
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <form onSubmit={handleCreateTodo} className="flex flex-col gap-3 sm:flex-row">
-          <input
-            value={newTodo}
-            onChange={(event) => setNewTodo(event.target.value)}
-            placeholder="Escribe una nueva tarea"
-            className="h-10 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none ring-blue-500 focus:ring-2"
-          />
-          <button
-            type="submit"
-            disabled={isMutating}
-            className="h-10 rounded-md bg-slate-900 px-4 text-sm font-medium text-white cursor-pointer transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Agregar
-          </button>
-        </form>
-      </section>
+        <div className="relative mx-auto flex w-full max-w-4xl flex-col gap-5">
+          <Card className="border-white/10 bg-slate-900/70 shadow-2xl backdrop-blur">
+            <CardHeader className="gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="text-2xl tracking-tight">TaskFlow</CardTitle>
+                <Badge variant="secondary" className="bg-blue-500/20 text-blue-100">
+                  Frontend Challenge
+                </Badge>
+              </div>
+              <CardDescription className="text-slate-300">
+                Administra tareas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleCreateTodo} className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  value={newTodo}
+                  onChange={(event) => setNewTodo(event.target.value)}
+                  placeholder="Escribe una nueva tarea"
+                  className="h-10 border-white/15 bg-white/5 text-slate-100 placeholder:text-slate-400"
+                />
+                <Button
+                  type="submit"
+                  disabled={isMutating}
+                  className="h-10 bg-blue-500 hover:bg-blue-400 cursor-pointer"
+                >
+                  Agregar tarea
+                </Button>
+              </form>
 
-      <section className="flex flex-wrap gap-2">
-        {FILTER_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setFilter(option.value)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer ${
-              filter === option.value
-                ? "bg-slate-900 text-white"
-                : "border border-slate-300 bg-white text-slate-700"
-            } hover:bg-slate-900 hover:text-white`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </section>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-300">Filtro:</span>
+                <Select value={filter} onValueChange={(value) => setFilter(value as TodoFilter)}>
+                  <SelectTrigger className="h-10 w-[190px] border-white/15 bg-white/5 cursor-pointer">
+                    <SelectValue placeholder="Selecciona un filtro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FILTER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-      {feedback && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {feedback}
+          {feedback && (
+            <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-100">
+              <CheckCircle2Icon className="size-4" />
+              <AlertTitle>Operación exitosa</AlertTitle>
+              <AlertDescription className="text-emerald-100/90">{feedback}</AlertDescription>
+            </Alert>
+          )}
+
+          {mutationError && (
+            <Alert variant="destructive" className="border-red-500/30 bg-red-500/10 text-red-100">
+              <AlertCircleIcon className="size-4" />
+              <AlertTitle>No se pudo completar la acción</AlertTitle>
+              <AlertDescription className="text-red-100/90">{mutationError}</AlertDescription>
+            </Alert>
+          )}
+
+          {error && (
+            <Alert variant="destructive" className="border-red-500/30 bg-red-500/10 text-red-100">
+              <AlertCircleIcon className="size-4" />
+              <AlertTitle>Error al cargar tareas</AlertTitle>
+              <AlertDescription className="flex items-center justify-between gap-2 text-red-100/90">
+                <span>{error}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={retryCurrentPage}
+                  className="border-red-300/40 bg-transparent hover:bg-red-500/20 cursor-pointer"
+                >
+                  Reintentar
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isLoading ? (
+            <LoadingState />
+          ) : todos.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <ul className="space-y-3">
+              {todos.map((todo) => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  disabled={isMutating}
+                  onToggle={toggleTodo}
+                  onDelete={setTodoToDelete}
+                />
+              ))}
+            </ul>
+          )}
+
+          <Card className="border-white/10 bg-slate-900/70">
+            <CardContent className="flex items-center justify-between py-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={goToPreviousPage}
+                disabled={isLoading || currentPage <= 1}
+                className="border-white/15 bg-white/5 hover:bg-white/10 cursor-pointer"
+              >
+                Anterior
+              </Button>
+              <p className="text-sm text-slate-300">
+                Página {currentPage} de {totalPages}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={goToNextPage}
+                disabled={isLoading || currentPage >= totalPages}
+                className="border-white/15 bg-white/5 hover:bg-white/10 cursor-pointer"
+              >
+                Siguiente
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </main>
 
-      {mutationError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {mutationError}
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={retryCurrentPage}
-            className="rounded-md border border-red-300 px-3 py-1 font-medium hover:bg-red-100"
-          >
-            Reintentar
-          </button>
-        </div>
-      )}
-
-      {isLoading ? (
-        <LoadingState />
-      ) : todos.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <ul className="space-y-3">
-          {todos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              disabled={isMutating}
-              onToggle={toggleTodo}
-              onDelete={handleDeleteTodo}
-            />
-          ))}
-        </ul>
-      )}
-
-      <section className="mt-auto flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3">
-        <button
-          type="button"
-          onClick={() => setPage(currentPage - 1)}
-          disabled={isLoading || currentPage <= 1}
-          className="rounded-md border border-slate-300 px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Anterior
-        </button>
-        <p className="text-sm text-slate-600">
-          Página {currentPage} de {totalPages}
-        </p>
-        <button
-          type="button"
-          onClick={() => setPage(currentPage + 1)}
-          disabled={isLoading || currentPage >= totalPages}
-          className="rounded-md border border-slate-300 px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Siguiente
-        </button>
-      </section>
-    </main>
+      <Dialog open={todoToDelete !== null} onOpenChange={(open) => !open && setTodoToDelete(null)}>
+        <DialogContent className="border-white/15 bg-slate-900 text-slate-100">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2Icon className="size-4" />
+              Confirmar eliminación
+            </DialogTitle>
+            <DialogDescription className="text-slate-300">
+              Esta acción removerá la tarea del listado local actual.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTodoToDelete(null)}
+              className="border-white/20 bg-white/5 hover:bg-white/10 cursor-pointer"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="bg-red-600 text-white hover:bg-red-500 cursor-pointer"
+              onClick={() => {
+                if (todoToDelete !== null) {
+                  void handleDeleteTodo(todoToDelete);
+                }
+              }}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
