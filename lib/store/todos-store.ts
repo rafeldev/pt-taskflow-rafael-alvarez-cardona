@@ -14,6 +14,7 @@ interface TodosState {
   updatedTodos: Record<number, Todo>;
   deletedTodoIds: number[];
   pendingToggleIds: number[];
+  pendingDeleteIds: number[];
   currentPage: number;
   total: number;
   limit: number;
@@ -45,6 +46,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
   updatedTodos: {},
   deletedTodoIds: [],
   pendingToggleIds: [],
+  pendingDeleteIds: [],
   currentPage: 1,
   total: 0,
   limit: TODOS_PER_PAGE,
@@ -212,25 +214,55 @@ export const useTodosStore = create<TodosState>((set, get) => ({
       return true;
     }
 
-    set({ isMutating: true, mutationError: null });
+    const stateBeforeDelete = get();
+    if (stateBeforeDelete.pendingDeleteIds.includes(id)) {
+      return false;
+    }
+
+    const wasAlreadyDeleted = stateBeforeDelete.deletedTodoIds.includes(id);
+    const createdTodoIndex = stateBeforeDelete.createdTodos.findIndex((todo) => todo.id === id);
+    const createdTodoSnapshot =
+      createdTodoIndex >= 0 ? stateBeforeDelete.createdTodos[createdTodoIndex] : null;
+    const wasLocalCreated = stateBeforeDelete.localCreatedTodoIds.includes(id);
+
+    set((state) => ({
+      mutationError: null,
+      pendingDeleteIds: [...state.pendingDeleteIds, id],
+      deletedTodoIds: state.deletedTodoIds.includes(id)
+        ? state.deletedTodoIds
+        : [...state.deletedTodoIds, id],
+      createdTodos: state.createdTodos.filter((todo) => todo.id !== id),
+      localCreatedTodoIds: state.localCreatedTodoIds.filter((todoId) => todoId !== id),
+    }));
 
     try {
       await deleteTodo(id);
 
       set((state) => ({
-        deletedTodoIds: state.deletedTodoIds.includes(id)
-          ? state.deletedTodoIds
-          : [...state.deletedTodoIds, id],
-        createdTodos: state.createdTodos.filter((todo) => todo.id !== id),
-        localCreatedTodoIds: state.localCreatedTodoIds.filter((todoId) => todoId !== id),
-        isMutating: false,
+        pendingDeleteIds: state.pendingDeleteIds.filter((pendingId) => pendingId !== id),
       }));
 
       return true;
     } catch {
-      set({
-        isMutating: false,
-        mutationError: "No fue posible eliminar la tarea.",
+      set((state) => {
+        const rollbackCreatedTodos = [...state.createdTodos];
+        if (createdTodoSnapshot && !rollbackCreatedTodos.some((todo) => todo.id === id)) {
+          const rollbackIndex = Math.min(createdTodoIndex, rollbackCreatedTodos.length);
+          rollbackCreatedTodos.splice(rollbackIndex, 0, createdTodoSnapshot);
+        }
+
+        return {
+          pendingDeleteIds: state.pendingDeleteIds.filter((pendingId) => pendingId !== id),
+          deletedTodoIds: wasAlreadyDeleted
+            ? state.deletedTodoIds
+            : state.deletedTodoIds.filter((deletedId) => deletedId !== id),
+          createdTodos: rollbackCreatedTodos,
+          localCreatedTodoIds:
+            wasLocalCreated && !state.localCreatedTodoIds.includes(id)
+              ? [id, ...state.localCreatedTodoIds]
+              : state.localCreatedTodoIds,
+          mutationError: "No fue posible eliminar la tarea.",
+        };
       });
       return false;
     }
