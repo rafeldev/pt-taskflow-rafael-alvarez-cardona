@@ -46,6 +46,7 @@ export default function Home() {
     filter,
     isLoading,
     isMutating,
+    pendingToggleIds,
     error,
     mutationError,
     goToPreviousPage,
@@ -90,9 +91,7 @@ export default function Home() {
                   Frontend Challenge
                 </Badge>
               </div>
-              <CardDescription className="text-slate-300">
-                Administra tareas
-              </CardDescription>
+              <CardDescription className="text-slate-300">Administra tareas</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleCreateTodo} className="flex flex-col gap-2 sm:flex-row">
@@ -119,7 +118,11 @@ export default function Home() {
                   </SelectTrigger>
                   <SelectContent>
                     {FILTER_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        className="cursor-pointer"
+                      >
                         {option.label}
                       </SelectItem>
                     ))}
@@ -173,7 +176,8 @@ export default function Home() {
                 <TodoItem
                   key={todo.id}
                   todo={todo}
-                  disabled={isMutating}
+                  toggleDisabled={pendingToggleIds.includes(todo.id)}
+                  deleteDisabled={isMutating}
                   onToggle={toggleTodo}
                   onDelete={setTodoToDelete}
                 />
