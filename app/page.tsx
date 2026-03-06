@@ -1,11 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { AlertCircleIcon, CheckCircle2Icon, Trash2Icon } from "lucide-react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Trash2Icon } from "lucide-react";
 import { EmptyState } from "@/components/todos/empty-state";
 import { LoadingState } from "@/components/todos/loading-state";
 import { TodoItem } from "@/components/todos/todo-item";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 import { useTodos } from "@/hooks/use-todos";
 import { TodoFilter } from "@/lib/types/todo";
 
@@ -36,8 +36,9 @@ const FILTER_OPTIONS: Array<{ label: string; value: TodoFilter }> = [
 
 export default function Home() {
   const [newTodo, setNewTodo] = useState("");
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [todoToDelete, setTodoToDelete] = useState<number | null>(null);
+  const prevMutationErrorRef = useRef<string | null>(null);
+  const prevErrorRef = useRef<string | null>(null);
 
   const {
     todos,
@@ -47,6 +48,7 @@ export default function Home() {
     isLoading,
     isMutating,
     pendingToggleIds,
+    pendingDeleteIds,
     error,
     mutationError,
     goToPreviousPage,
@@ -58,22 +60,41 @@ export default function Home() {
     removeTodo,
   } = useTodos();
 
+  useEffect(() => {
+    if (mutationError && mutationError !== prevMutationErrorRef.current) {
+      toast.error("No se pudo completar la acción", { description: mutationError });
+    }
+    prevMutationErrorRef.current = mutationError;
+  }, [mutationError]);
+
+  useEffect(() => {
+    if (error && error !== prevErrorRef.current) {
+      toast.error("Error al cargar tareas", {
+        description: error,
+        action: {
+          label: "Reintentar",
+          onClick: () => void retryCurrentPage(),
+        },
+      });
+    }
+    prevErrorRef.current = error;
+  }, [error, retryCurrentPage]);
+
   async function handleCreateTodo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFeedback(null);
 
     const wasCreated = await addTodo(newTodo);
     if (wasCreated) {
       setNewTodo("");
-      setFeedback("Tarea creada correctamente.");
+      toast.success("Tarea creada correctamente.");
     }
   }
 
   async function handleDeleteTodo(id: number) {
+    setTodoToDelete(null);
     const wasDeleted = await removeTodo(id);
     if (wasDeleted) {
-      setFeedback("Tarea eliminada correctamente.");
-      setTodoToDelete(null);
+      toast.success("Tarea eliminada correctamente.");
     }
   }
 
@@ -132,40 +153,6 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {feedback && (
-            <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-100">
-              <CheckCircle2Icon className="size-4" />
-              <AlertTitle>Operación exitosa</AlertTitle>
-              <AlertDescription className="text-emerald-100/90">{feedback}</AlertDescription>
-            </Alert>
-          )}
-
-          {mutationError && (
-            <Alert variant="destructive" className="border-red-500/30 bg-red-500/10 text-red-100">
-              <AlertCircleIcon className="size-4" />
-              <AlertTitle>No se pudo completar la acción</AlertTitle>
-              <AlertDescription className="text-red-100/90">{mutationError}</AlertDescription>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert variant="destructive" className="border-red-500/30 bg-red-500/10 text-red-100">
-              <AlertCircleIcon className="size-4" />
-              <AlertTitle>Error al cargar tareas</AlertTitle>
-              <AlertDescription className="flex items-center justify-between gap-2 text-red-100/90">
-                <span>{error}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={retryCurrentPage}
-                  className="border-red-300/40 bg-transparent hover:bg-red-500/20 cursor-pointer"
-                >
-                  Reintentar
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {isLoading ? (
             <LoadingState />
           ) : todos.length === 0 ? (
@@ -177,7 +164,7 @@ export default function Home() {
                   key={todo.id}
                   todo={todo}
                   toggleDisabled={pendingToggleIds.includes(todo.id)}
-                  deleteDisabled={isMutating}
+                  deleteDisabled={pendingDeleteIds.includes(todo.id)}
                   onToggle={toggleTodo}
                   onDelete={setTodoToDelete}
                 />
