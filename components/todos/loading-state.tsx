@@ -1,7 +1,14 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
 export function LoadingState() {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-      Cargando tareas...
-    </div>
+    <Card>
+      <CardContent className="space-y-3 pt-1">
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-full" />
+      </CardContent>
+    </Card>
   );
 }
