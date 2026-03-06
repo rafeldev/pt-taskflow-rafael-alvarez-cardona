@@ -1,4 +1,9 @@
 import { Todo } from "@/lib/types/todo";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+
 
 interface TodoItemProps {
   todo: Todo;
@@ -9,32 +14,50 @@ interface TodoItemProps {
 
 export function TodoItem({ todo, disabled = false, onToggle, onDelete }: TodoItemProps) {
   return (
-    <li className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-      <label className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={todo.completed}
-          disabled={disabled}
-          onChange={() => onToggle(todo)}
-          className="h-4 w-4"
-        />
-        <span
-          className={`text-sm text-slate-800 ${
-            todo.completed ? "line-through text-slate-500" : ""
-          }`}
-        >
-          {todo.todo}
-        </span>
-      </label>
-
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onDelete(todo.id)}
-        className="rounded-md border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+    <li>
+      <Card
+        size="sm"
+        className="border-white/10 bg-white/[0.03] ring-1 ring-white/5 transition hover:bg-white/[0.05]"
       >
-        Eliminar
-      </button>
+        <CardContent className="flex items-center justify-between gap-3 py-3">
+          <label className="flex min-w-0 flex-1 items-center gap-3">
+            <Checkbox
+              checked={todo.completed}
+              disabled={disabled}
+              onCheckedChange={() => onToggle(todo)}
+              className="size-4 accent-blue-400"
+            />
+
+            <span
+              className={`truncate text-sm ${
+                todo.completed ? "text-muted-foreground line-through" : "text-foreground"
+              }`}
+            >
+              {todo.todo}
+            </span>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={todo.completed ? "secondary" : "outline"}
+              className={todo.completed ? "bg-emerald-500/20 text-emerald-200" : ""}
+            >
+              {todo.completed ? "Completada" : "Pendiente"}
+            </Badge>
+
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={disabled}
+              onClick={() => onDelete(todo.id)}
+              className="text-red-300 hover:bg-red-500/10 hover:text-red-200 cursor-pointer"
+            >
+              Eliminar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </li>
   );
 }
