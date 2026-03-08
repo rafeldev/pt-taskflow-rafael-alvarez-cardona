@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TaskFlow - Prueba Tecnica Frontend
 
-## Getting Started
+Aplicacion de gestion de tareas construida con `Next.js`, `React`, `TypeScript`, `TailwindCSS`, `shadcn/ui` y `Zustand`, consumiendo la API de DummyJSON.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router)
+- React 19
+- TypeScript
+- TailwindCSS + shadcn/ui
+- Zustand (estado global)
+- Sonner (toasts)
+
+## Requisitos previos
+
+- Node.js 20+ recomendado
+- pnpm 10+
+
+## Instalacion y ejecucion local
+
+1. Clona el repositorio:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/rafeldev/pt-taskflow-rafael-alvarez-cardona.git
+cd pt-taskflow-rafael-alvarez-cardona
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Instala dependencias:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Crea el archivo de entorno local:
 
-## Learn More
+```bash
+cp .env.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. Ejecuta el proyecto:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Abre `http://localhost:3000`.
 
-## Deploy on Vercel
+## Variables de entorno
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`.env.example`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+NEXT_PUBLIC_API_BASE_URL=https://dummyjson.com
+```
+
+## Scripts utiles
+
+```bash
+pnpm dev           # entorno de desarrollo
+pnpm build         # build de produccion
+pnpm start         # correr build en local
+pnpm lint          # validar eslint
+pnpm lint:fix      # corregir lint automaticamente
+pnpm format        # formatear con prettier
+pnpm format:check  # verificar formato
+```
+
+## Funcionalidades implementadas
+
+- Listado de tareas paginado (10 por pagina)
+- Crear tarea (POST) con actualizacion en estado local
+- Cambiar estado completada/pendiente (PATCH) con optimistic update + rollback
+- Eliminar tarea (DELETE) con optimistic update + rollback
+- Confirmacion antes de eliminar (Dialog)
+- Filtro local: todas, completadas, pendientes
+- Loading/empty states y feedback de errores con opcion de reintentar
+
+## Arquitectura (resumen)
+
+- `lib/api/*`: cliente HTTP y endpoints
+- `lib/store/todos-store.ts`: estado global y reglas de negocio CRUD
+- `hooks/use-todos.ts`: composicion de estado para UI
+- `components/*`: UI reutilizable y componentes de dominio
+- `app/page.tsx`: pantalla principal (container)
+
+## Notas tecnicas
+
+DummyJSON no persiste operaciones de escritura.  
+Por eso se maneja estado local para mantener consistencia en UI despues de crear, actualizar o eliminar tareas.
+
+## Deploy
+
+- Produccion: https://pt-taskflow-rafael-alvarez-cardona.vercel.app
+- Deploy puntual: https://pt-taskflow-rafael-alvarez-cardona-86y9uh2e8.vercel.app
