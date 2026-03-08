@@ -32,7 +32,18 @@ interface TodosState {
   addTodo: (text: string) => Promise<boolean>;
   toggleTodo: (todo: Todo) => Promise<boolean>;
   removeTodo: (id: number) => Promise<boolean>;
+  lastFailedAction: FailedAction | null;
+  retryLastAction: () => Promise<boolean>;
+
+
 }
+
+type FailedAction =
+  | { type: "fetchPage"; payload: { page: number } }
+  | { type: "addTodo"; payload: { text: string } }
+  | { type: "toggleTodo"; payload: { todo: Todo } }
+  | { type: "removeTodo"; payload: { id: number } };
+
 
 function uniqueLocalTodoId(currentTodos: Todo[]): number {
   const minId = currentTodos.reduce((min, todo) => Math.min(min, todo.id), 0);
@@ -55,6 +66,31 @@ export const useTodosStore = create<TodosState>((set, get) => ({
   isMutating: false,
   error: null,
   mutationError: null,
+  lastFailedAction: null,
+
+
+
+
+
+  retryLastAction: async () => {
+    const failedAction = get().lastFailedAction;
+    if (!failedAction) return false;
+    switch (failedAction.type) {
+      case "fetchPage":
+        await get().fetchPage(failedAction.payload.page);
+        return get().error === null;
+      case "addTodo":
+        return get().addTodo(failedAction.payload.text);
+      case "toggleTodo":
+        return get().toggleTodo(failedAction.payload.todo);
+      case "removeTodo":
+        return get().removeTodo(failedAction.payload.id);
+      default:
+        return false;
+    }
+  },
+
+  
 
   fetchPage: async (page: number) => {
     set({ isLoading: true, error: null });
@@ -71,11 +107,13 @@ export const useTodosStore = create<TodosState>((set, get) => ({
         total: response.total,
         currentPage: page,
         isLoading: false,
+        lastFailedAction: null,
       }));
     } catch {
       set({
         isLoading: false,
         error: "No fue posible cargar las tareas. Intenta nuevamente.",
+        lastFailedAction: { type: "fetchPage", payload: { page } },
       });
     }
   },
@@ -128,15 +166,17 @@ export const useTodosStore = create<TodosState>((set, get) => ({
           createdTodos: [safeCreatedTodo, ...state.createdTodos],
           localCreatedTodoIds: [safeCreatedTodo.id, ...state.localCreatedTodoIds],
           isMutating: false,
+          lastFailedAction: null,
         };
       });
 
       return true;
     } catch {
-      set({
+      set((state) => ({
         isMutating: false,
         mutationError: "No fue posible crear la tarea.",
-      });
+        lastFailedAction: { type: "addTodo", payload: { text } },
+      }));
       return false;
     }
   },
@@ -183,6 +223,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
             ...updated,
           },
         },
+        lastFailedAction: null,
       }));
 
       return true;
@@ -200,6 +241,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
           item.id === todo.id ? { ...item, completed: todo.completed } : item
         ),
         mutationError: "No fue posible actualizar el estado de la tarea.",
+        lastFailedAction: { type: "toggleTodo", payload: { todo } },
       }));
       return false;
     }
@@ -240,6 +282,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
 
       set((state) => ({
         pendingDeleteIds: state.pendingDeleteIds.filter((pendingId) => pendingId !== id),
+        lastFailedAction: null,
       }));
 
       return true;
@@ -262,6 +305,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
               ? [id, ...state.localCreatedTodoIds]
               : state.localCreatedTodoIds,
           mutationError: "No fue posible eliminar la tarea.",
+          lastFailedAction: { type: "removeTodo", payload: { id } },
         };
       });
       return false;

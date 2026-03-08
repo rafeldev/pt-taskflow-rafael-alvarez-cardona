@@ -41,6 +41,7 @@ export function useTodos() {
     addTodo,
     toggleTodo,
     removeTodo,
+    retryLastAction,
   } = useTodosStore();
 
   useEffect(() => {
@@ -81,5 +82,6 @@ export function useTodos() {
     addTodo,
     toggleTodo,
     removeTodo,
+    retryLastAction,
   };
 }

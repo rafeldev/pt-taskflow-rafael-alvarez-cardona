@@ -39,11 +39,15 @@ export default function Home() {
     addTodo,
     toggleTodo,
     removeTodo,
+    retryLastAction,
   } = useTodos();
 
   useEffect(() => {
     if (mutationError && mutationError !== prevMutationErrorRef.current) {
-      toast.error("No se pudo completar la acción", { description: mutationError });
+      toast.error("No se pudo completar la acción", { description: mutationError, action: {
+        label: "Reintentar",
+        onClick: () => void retryLastAction(),
+      }, });
     }
     prevMutationErrorRef.current = mutationError;
   }, [mutationError]);
