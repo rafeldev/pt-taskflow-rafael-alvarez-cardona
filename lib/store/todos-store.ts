@@ -172,7 +172,7 @@ export const useTodosStore = create<TodosState>((set, get) => ({
 
       return true;
     } catch {
-      set((state) => ({
+      set(() => ({
         isMutating: false,
         mutationError: "No fue posible crear la tarea.",
         lastFailedAction: { type: "addTodo", payload: { text } },

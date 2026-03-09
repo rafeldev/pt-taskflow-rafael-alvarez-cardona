@@ -21,7 +21,7 @@ async function request<T>(endpoint: string, init?: RequestInit): Promise<T> {
 
 export async function getTodos(params: { limit: number; page: number }): Promise<TodosResponse> {
   const skip = (params.page - 1) * params.limit;
-  return request<TodosResponse>(`/todos?limits=${params.limit}&skip=${skip}`);
+  return request<TodosResponse>(`/todos?limit=${params.limit}&skip=${skip}`);
 }
 
 export async function createTodo(payload: CreateTodoPayload): Promise<Todo> {

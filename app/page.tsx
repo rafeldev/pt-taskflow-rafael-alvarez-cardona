@@ -50,7 +50,7 @@ export default function Home() {
       }, });
     }
     prevMutationErrorRef.current = mutationError;
-  }, [mutationError]);
+  }, [mutationError, retryLastAction]);
 
   useEffect(() => {
     if (error && error !== prevErrorRef.current) {
