@@ -63,7 +63,35 @@ pnpm lint          # validar eslint
 pnpm lint:fix      # corregir lint automaticamente
 pnpm format        # formatear con prettier
 pnpm format:check  # verificar formato
+pnpm test          # ejecutar pruebas unitarias una vez
+pnpm test:watch    # ejecutar pruebas en modo watch
 ```
+
+## Ejecucion de tests
+
+La aplicacion incluye pruebas unitarias con `Jest` + `ts-jest` enfocadas en la logica critica del store global.
+
+### Ejecutar una corrida de tests
+
+```bash
+pnpm test
+```
+
+### Ejecutar tests en modo watch (desarrollo)
+
+```bash
+pnpm test:watch
+```
+
+### Que se valida actualmente
+
+- `toggleTodo`: optimistic update y rollback cuando falla la API.
+- `removeTodo`: eliminacion optimista y rollback cuando falla la API.
+- `retryCurrentPage`: reintento de carga y limpieza de error al recuperar respuesta.
+
+Archivo principal de pruebas:
+
+- `lib/store/todos-store.test.ts`
 
 ## Funcionalidades implementadas
 
