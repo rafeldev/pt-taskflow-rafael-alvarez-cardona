@@ -116,6 +116,23 @@ Archivo principal de pruebas:
 DummyJSON no persiste operaciones de escritura.  
 Por eso se maneja estado local para mantener consistencia en UI despues de crear, actualizar o eliminar tareas.
 
+### Persistencia en sesion (Zustand + sessionStorage)
+
+La aplicacion persiste parte del estado del store en `sessionStorage` para conservar el contexto al recargar la pagina en la misma pestana.
+
+Se persiste unicamente estado durable:
+
+- `createdTodos`
+- `updatedTodos`
+- `deletedTodoIds`
+- `localCreatedTodoIds`
+- `filter`
+- `currentPage`
+
+No se persisten estados transitorios de UI/red (`isLoading`, `isMutating`, `error`, `mutationError`, `pendingToggleIds`, `pendingDeleteIds`, `lastFailedAction`, `todosByPage`) para evitar inconsistencias al hidratar.
+
+La hidratacion incluye saneamiento de datos para manejar payloads invalidos de storage (por ejemplo: `filter` no reconocido o `currentPage` fuera de rango minimo).
+
 ## Deploy
 
 - Produccion: https://pt-taskflow-rafael-alvarez-cardona.vercel.app
