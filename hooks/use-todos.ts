@@ -46,9 +46,9 @@ export function useTodos() {
 
   useEffect(() => {
     if (Object.keys(todosByPage).length === 0) {
-      void fetchPage(1);
+      void fetchPage(currentPage);
     }
-  }, [fetchPage, todosByPage]);
+  }, [currentPage, fetchPage, todosByPage]);
 
   const currentPageTodos = useMemo(() => {
     const apiTodos = todosByPage[currentPage] ?? [];
